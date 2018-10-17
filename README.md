@@ -1,2 +1,121 @@
 # canvas-dfs-animation
 depth first searching animation, using canvas and es6 
+
+<div style="display: flex;justify-content: center;">
+    <canvas id="dfs-canvas" width="800" height="800"></canvas>
+</div>
+<script type="text/javascript">
+    (function () {
+        'use strict';
+        const canvas = document.getElementById('dfs-canvas');
+        if (!canvas.getContext) {
+            console.log('canvas is NOT SUPPORTED by this browser!');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+        class Node {
+            constructor(x, y, radius, avoided) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.avoided = avoided;
+                this.visited = false;
+            }
+        }
+
+        const initNodes = function (offsetX, offsetY, M, N, m, n, radius, delta) {
+            const nodes = [];
+            for (let i = 0; i < M; i++) {
+                const row = [];
+                for (let j = 0; j < N; j++) {
+                    const node = new Node(offsetY + j * delta, offsetX + i * delta, radius, i === m && j === n);
+                    row.push(node);
+                }
+                nodes.push(row);
+            }
+            return nodes;
+        };
+
+        const drawNode = function (node) {
+            ctx.beginPath();
+            ctx.arc(
+                node.x,
+                node.y,
+                node.radius,
+                0,
+                Math.PI * 2,
+                true
+            );
+            ctx.fillStyle = node.avoided ? 'red' : 'black';
+            ctx.fill();
+        };
+
+        const drawAllNodes = function (nodes) {
+            for (let i = 0; i < nodes.length; i++)
+                for (let j = 0; j < nodes.length; j++)
+                    drawNode(nodes[i][j]);
+            ctx.save();
+        };
+
+
+        const dfs = function (nodes, i, j, visitedNodes, nodeSnapshots) {
+            if (i < 0 || i === nodes.length) {
+                nodeSnapshots.push(Array.from(visitedNodes));
+                return;
+            }
+
+            if (j < 0 || j === nodes[i].length) {
+                nodeSnapshots.push(Array.from(visitedNodes));
+                return;
+            }
+
+            const node = nodes[i][j];
+            if (node.avoided || node.visited) {
+                nodeSnapshots.push(Array.from(visitedNodes));
+                return;
+            }
+
+            node.visited = true;
+            visitedNodes.push(node);
+            dfs(nodes, i + 1, j, visitedNodes, nodeSnapshots);
+            dfs(nodes, i, j + 1, visitedNodes, nodeSnapshots);
+            dfs(nodes, i - 1, j, visitedNodes, nodeSnapshots);
+            dfs(nodes, i, j - 1, visitedNodes, nodeSnapshots);
+            visitedNodes.pop();
+            node.visited = false;
+        };
+
+
+        const drawPath = function (visitedNodes) {
+            if (!visitedNodes || visitedNodes.length < 2)
+                return;
+            ctx.restore();
+            ctx.beginPath();
+            ctx.moveTo(visitedNodes[0].x, visitedNodes[0].y);
+            for (let i = 0; i < visitedNodes.length; i++)
+                ctx.lineTo(visitedNodes[i].x, visitedNodes[i].y);
+            //ctx.closePath();
+            ctx.strokeStyle = 'green';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        };
+
+        const nodes = initNodes(100, 100, 5, 5, 0, 1, 10, 100);
+        const nodeSnapshots = [];
+        dfs(nodes, 0, 0, [], nodeSnapshots);
+        const draw = function (index) {
+            if (index >= nodeSnapshots.length)
+                return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAllNodes(nodes);
+            drawPath(nodeSnapshots[index]);
+            window.requestAnimationFrame(function () {
+                draw(index + 1);
+            });
+        };
+        draw(0);
+    })();
+
+</script>
